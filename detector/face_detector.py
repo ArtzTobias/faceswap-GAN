@@ -22,18 +22,21 @@ class MTCNNFaceDetector():
         if not model_path:
             model_path, _ = os.path.split(os.path.realpath(__file__))
 
-        with tf.compat.v1.VariableScope('pnet'):
-            data = tf.placeholder(tf.float32, (None,None,None,3), 'input')
-            pnet = mtcnn_detect_face.PNet({'data':data})
-            pnet.load(os.path.join(model_path, 'det1.npy'), sess)
-        with tf.compat.v1.VariableScope('rnet'):
-            data = tf.placeholder(tf.float32, (None,24,24,3), 'input')
-            rnet = mtcnn_detect_face.RNet({'data':data})
-            rnet.load(os.path.join(model_path, 'det2.npy'), sess)
-        with tf.compat.v1.VariableScope('onet'):
-            data = tf.placeholder(tf.float32, (None,48,48,3), 'input')
-            onet = mtcnn_detect_face.ONet({'data':data})
-            onet.load(os.path.join(model_path, 'det3.npy'), sess)
+        # Create the pnet model
+        data_pnet = tf.keras.Input(shape=(None, None, 3), name='input_pnet')
+        pnet = mtcnn_detect_face.PNet({'data': data_pnet})
+        pnet.load_weights(os.path.join(model_path, 'det1.npy'))
+
+        # Create the rnet model
+        data_rnet = tf.keras.Input(shape=(24, 24, 3), name='input_rnet')
+        rnet = mtcnn_detect_face.RNet({'data': data_rnet})
+        rnet.load_weights(os.path.join(model_path, 'det2.npy'))
+
+        # Create the onet model
+        data_onet = tf.keras.Input(shape=(48, 48, 3), name='input_onet')
+        onet = mtcnn_detect_face.ONet({'data': data_onet})
+        onet.load_weights(os.path.join(model_path, 'det3.npy'))
+        
         self.pnet = K.function([pnet.layers['data']], [pnet.layers['conv4-2'], pnet.layers['prob1']])
         self.rnet = K.function([rnet.layers['data']], [rnet.layers['conv5-2'], rnet.layers['prob1']])
         self.onet = K.function([onet.layers['data']], [onet.layers['conv6-2'], onet.layers['conv6-3'], onet.layers['prob1']])
